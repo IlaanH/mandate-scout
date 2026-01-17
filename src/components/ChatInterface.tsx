@@ -111,8 +111,7 @@ export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterf
     </div>
   );
 
-  // Input component to reuse in both states
-  const InputBar = ({ centered = false }: { centered?: boolean }) => (
+  const renderInputBar = (centered = false) => (
     <div className={cn(
       "chat-input-container flex items-center gap-3 px-5 py-3",
       centered ? "w-full max-w-xl" : ""
@@ -142,8 +141,7 @@ export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterf
     </div>
   );
 
-  // Suggestions component to reuse
-  const Suggestions = () => (
+  const renderSuggestions = () => (
     <div className="flex flex-wrap gap-2 justify-center">
       {SUGGESTION_QUERIES.map((query, index) => (
         <button
@@ -185,10 +183,10 @@ export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterf
           </div>
           
           <div className="w-full max-w-xl mb-6">
-            <InputBar centered />
+            {renderInputBar(true)}
           </div>
           
-          <Suggestions />
+          {renderSuggestions()}
         </div>
       ) : (
         /* Conversation State */
@@ -251,7 +249,7 @@ export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterf
           {/* Input area - bottom */}
           <div className="flex-shrink-0 px-8 pb-8 pt-4">
             <div className="max-w-2xl mx-auto">
-              <InputBar />
+              {renderInputBar()}
             </div>
           </div>
         </>
