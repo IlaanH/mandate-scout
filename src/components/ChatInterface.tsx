@@ -10,17 +10,6 @@ interface ChatInterfaceProps {
   selectedListingId?: string;
 }
 
-const WELCOME_MESSAGE: ChatMessageType = {
-  id: 'welcome',
-  role: 'assistant',
-  content: `Bonjour, je suis votre assistant mandat.ai.
-
-Je peux vous aider à trouver les mandats prioritaires, filtrer par critères, analyser les signaux et préparer vos prises de contact.
-
-Que souhaitez-vous explorer ?`,
-  timestamp: new Date()
-};
-
 const SUGGESTION_QUERIES = [
   "Mandats les plus chauds",
   "DPE F/G avec baisse de prix",
@@ -28,11 +17,13 @@ const SUGGESTION_QUERIES = [
 ];
 
 export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<ChatMessageType[]>([WELCOME_MESSAGE]);
+  const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const isWelcomeState = messages.length === 0;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -92,128 +83,159 @@ export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterf
   };
 
   const handleReset = () => {
-    setMessages([WELCOME_MESSAGE]);
+    setMessages([]);
   };
+
+  // Input component to reuse in both states
+  const InputBar = ({ centered = false }: { centered?: boolean }) => (
+    <div className={cn(
+      "chat-input-container flex items-center gap-3 px-5 py-3",
+      centered ? "w-full max-w-xl" : ""
+    )}>
+      <textarea
+        ref={inputRef}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Décrivez ce que vous cherchez..."
+        className="flex-1 bg-transparent resize-none text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-h-[24px] max-h-[100px]"
+        rows={1}
+        disabled={isLoading}
+      />
+      <button 
+        onClick={() => handleSubmit()}
+        disabled={!input.trim() || isLoading}
+        className={cn(
+          "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
+          input.trim() 
+            ? "bg-foreground text-background" 
+            : "bg-muted text-muted-foreground"
+        )}
+      >
+        <ArrowUp className="w-4 h-4" />
+      </button>
+    </div>
+  );
+
+  // Suggestions component to reuse
+  const Suggestions = () => (
+    <div className="flex flex-wrap gap-2 justify-center">
+      {SUGGESTION_QUERIES.map((query, index) => (
+        <button
+          key={index}
+          onClick={() => handleSubmit(query)}
+          className="px-4 py-2 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all duration-300"
+        >
+          {query}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Header - minimal */}
-      <div className="flex-shrink-0 px-8 py-5 flex items-center justify-between">
+      {/* Header - slightly darker */}
+      <div className="flex-shrink-0 px-8 py-5 flex items-center justify-between bg-secondary/50 border-b border-border/50">
         <h1 className="font-serif text-xl text-foreground tracking-tight">mandat.ai</h1>
-        <button 
-          onClick={handleReset}
-          className="text-muted-foreground hover:text-foreground transition-colors p-2"
-        >
-          <RotateCcw className="w-4 h-4" />
-        </button>
+        {!isWelcomeState && (
+          <button 
+            onClick={handleReset}
+            className="text-muted-foreground hover:text-foreground transition-colors p-2"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
-      {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-8 py-4 scrollbar-thin">
-        <div className="max-w-2xl mx-auto space-y-8">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={cn(
-                'animate-fade-in',
-                message.role === 'user' ? 'flex justify-end' : ''
-              )}
-            >
-              <div className={cn(
-                message.role === 'user' ? 'max-w-[80%]' : 'w-full'
-              )}>
-                <div className={cn(
-                  'text-sm leading-relaxed',
-                  message.role === 'user' 
-                    ? 'chat-bubble-user' 
-                    : 'chat-bubble-assistant py-0'
-                )}>
-                  <div 
-                    className="whitespace-pre-wrap"
-                    dangerouslySetInnerHTML={{ 
-                      __html: message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
-                    }}
-                  />
-                </div>
-                
-                {/* Listings results */}
-                {message.listings && message.listings.length > 0 && (
-                  <div className="mt-6 space-y-3">
-                    {message.listings.map(listing => (
-                      <ListingCard
-                        key={listing.id}
-                        listing={listing}
-                        isSelected={listing.id === selectedListingId}
-                        onClick={() => onSelectListing(listing)}
+      {isWelcomeState ? (
+        /* Welcome State - Centered layout like Manus AI */
+        <div className="flex-1 flex flex-col items-center justify-center px-8">
+          <div className="text-center mb-10">
+            <h2 className="font-serif text-3xl md:text-4xl text-foreground mb-4">
+              Que puis-je faire pour vous ?
+            </h2>
+            <p className="text-muted-foreground text-sm md:text-base max-w-lg mx-auto leading-relaxed">
+              Ton assistant qui t'aide à gagner plus de mandats en centralisant les signaux marché et en les transformant en communication parfaitement timée.
+            </p>
+          </div>
+          
+          <div className="w-full max-w-xl mb-6">
+            <InputBar centered />
+          </div>
+          
+          <Suggestions />
+        </div>
+      ) : (
+        /* Conversation State */
+        <>
+          {/* Messages area */}
+          <div className="flex-1 overflow-y-auto px-8 py-4 scrollbar-thin">
+            <div className="max-w-2xl mx-auto space-y-8">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    'animate-fade-in',
+                    message.role === 'user' ? 'flex justify-end' : ''
+                  )}
+                >
+                  <div className={cn(
+                    message.role === 'user' ? 'max-w-[80%]' : 'w-full'
+                  )}>
+                    <div className={cn(
+                      'text-sm leading-relaxed',
+                      message.role === 'user' 
+                        ? 'chat-bubble-user' 
+                        : 'chat-bubble-assistant py-0'
+                    )}>
+                      <div 
+                        className="whitespace-pre-wrap"
+                        dangerouslySetInnerHTML={{ 
+                          __html: message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+                        }}
                       />
-                    ))}
+                    </div>
+                    
+                    {/* Listings results */}
+                    {message.listings && message.listings.length > 0 && (
+                      <div className="mt-6 space-y-3">
+                        {message.listings.map(listing => (
+                          <ListingCard
+                            key={listing.id}
+                            listing={listing}
+                            isSelected={listing.id === selectedListingId}
+                            onClick={() => onSelectListing(listing)}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-          ))}
+                </div>
+              ))}
 
-          {/* Loading indicator */}
-          {isLoading && (
-            <div className="animate-fade-in">
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-pulse" />
-                <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-pulse [animation-delay:150ms]" />
-                <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-pulse [animation-delay:300ms]" />
-              </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      {/* Suggestions - only show at start */}
-      {messages.length === 1 && (
-        <div className="flex-shrink-0 px-8 pb-4">
-          <div className="max-w-2xl mx-auto flex flex-wrap gap-2 justify-center">
-            {SUGGESTION_QUERIES.map((query, index) => (
-              <button
-                key={index}
-                onClick={() => handleSubmit(query)}
-                className="px-4 py-2 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all duration-300"
-              >
-                {query}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Input area - pill style */}
-      <div className="flex-shrink-0 px-8 pb-8 pt-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="chat-input-container flex items-center gap-3 px-5 py-3">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Décrivez ce que vous cherchez..."
-              className="flex-1 bg-transparent resize-none text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-h-[24px] max-h-[100px]"
-              rows={1}
-              disabled={isLoading}
-            />
-            <button 
-              onClick={() => handleSubmit()}
-              disabled={!input.trim() || isLoading}
-              className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
-                input.trim() 
-                  ? "bg-foreground text-background" 
-                  : "bg-muted text-muted-foreground"
+              {/* Loading indicator */}
+              {isLoading && (
+                <div className="animate-fade-in">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-pulse" />
+                    <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-pulse [animation-delay:150ms]" />
+                    <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-pulse [animation-delay:300ms]" />
+                  </div>
+                </div>
               )}
-            >
-              <ArrowUp className="w-4 h-4" />
-            </button>
+
+              <div ref={messagesEndRef} />
+            </div>
           </div>
-        </div>
-      </div>
+
+          {/* Input area - bottom */}
+          <div className="flex-shrink-0 px-8 pb-8 pt-4">
+            <div className="max-w-2xl mx-auto">
+              <InputBar />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
