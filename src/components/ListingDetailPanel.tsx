@@ -1,7 +1,5 @@
 import { ScoredListing } from '@/types/listing';
-import { X, ExternalLink, Mail, MessageSquare, Phone, TrendingDown, Zap, Calendar, Home, MapPin, Building2, Euro } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { X, ExternalLink, Mail, MessageSquare, Phone, TrendingDown, Calendar, Home, MapPin } from 'lucide-react';
 import { ScoreBreakdown } from './ScoreBreakdown';
 import { useState } from 'react';
 import { MessageGenerator } from './MessageGenerator';
@@ -16,10 +14,12 @@ export function ListingDetailPanel({ listing, onClose }: ListingDetailPanelProps
 
   if (!listing) {
     return (
-      <div className="context-panel p-6 flex items-center justify-center h-full">
-        <div className="text-center text-muted-foreground">
-          <Home className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p className="text-sm">Sélectionnez une annonce pour voir les détails</p>
+      <div className="context-panel p-8 flex flex-col items-center justify-center h-full">
+        <div className="text-center max-w-xs">
+          <h2 className="font-serif text-lg text-foreground mb-2">Espace de travail</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Sélectionnez une annonce dans le chat pour afficher ses détails et préparer votre prise de contact.
+          </p>
         </div>
       </div>
     );
@@ -29,7 +29,7 @@ export function ListingDetailPanel({ listing, onClose }: ListingDetailPanelProps
 
   if (showMessageGenerator) {
     return (
-      <div className="context-panel h-full animate-slide-in-right">
+      <div className="context-panel h-full animate-fade-in">
         <MessageGenerator 
           listing={listing} 
           type={showMessageGenerator} 
@@ -40,19 +40,24 @@ export function ListingDetailPanel({ listing, onClose }: ListingDetailPanelProps
   }
 
   return (
-    <div className="context-panel h-full overflow-y-auto scrollbar-thin animate-slide-in-right">
+    <div className="context-panel h-full overflow-y-auto scrollbar-thin animate-fade-in">
       {/* Header */}
-      <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between">
-        <h2 className="font-semibold text-foreground">Détails de l'annonce</h2>
-        <Button variant="ghost" size="icon" onClick={onClose}>
+      <div className="sticky top-0 bg-workspace/95 backdrop-blur-sm px-6 py-4 flex items-center justify-between z-10">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+          Détails
+        </span>
+        <button 
+          onClick={onClose}
+          className="lg:hidden text-muted-foreground hover:text-foreground transition-colors p-1"
+        >
           <X className="w-4 h-4" />
-        </Button>
+        </button>
       </div>
 
-      <div className="p-6 space-y-6">
-        {/* Image placeholder */}
+      <div className="px-6 pb-8 space-y-8">
+        {/* Image */}
         {listing.imageUrl && (
-          <div className="aspect-video rounded-lg overflow-hidden bg-secondary">
+          <div className="aspect-[4/3] rounded-lg overflow-hidden bg-muted">
             <img 
               src={listing.imageUrl} 
               alt={`${listing.propertyType} à ${listing.city}`}
@@ -62,24 +67,21 @@ export function ListingDetailPanel({ listing, onClose }: ListingDetailPanelProps
         )}
 
         {/* Title and price */}
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-              {listing.platform}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {listing.sellerType}
-            </span>
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>{listing.platform}</span>
+            <span>·</span>
+            <span>{listing.sellerType}</span>
           </div>
-          <h3 className="text-xl font-bold text-foreground mb-1">
+          <h3 className="font-serif text-xl text-foreground">
             {listing.propertyType} {listing.surface}m²
           </h3>
-          <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <MapPin className="w-4 h-4" />
             {listing.address || listing.city}, {listing.postalCode}
           </div>
           <div className="flex items-baseline gap-3">
-            <span className="text-2xl font-bold text-foreground">{priceFormatted}€</span>
+            <span className="text-2xl font-medium text-foreground">{priceFormatted}€</span>
             <span className="text-sm text-muted-foreground">
               {Math.round(listing.price / listing.surface).toLocaleString('fr-FR')}€/m²
             </span>
@@ -88,133 +90,98 @@ export function ListingDetailPanel({ listing, onClose }: ListingDetailPanelProps
 
         {/* Price history */}
         {listing.priceHistory.length > 0 && (
-          <div className="bg-priority-high/5 border border-priority-high/20 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-priority-high flex items-center gap-2 mb-3">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm text-priority-high">
               <TrendingDown className="w-4 h-4" />
-              Historique des prix
-            </h4>
-            <div className="space-y-2">
+              <span className="font-medium">Baisse de prix</span>
+            </div>
+            <div className="space-y-2 pl-6">
               {listing.priceHistory.map((change, index) => (
                 <div key={index} className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{new Date(change.date).toLocaleDateString('fr-FR')}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground line-through">
-                      {change.previousPrice.toLocaleString('fr-FR')}€
-                    </span>
-                    <span className="text-priority-high font-medium">
-                      {change.newPrice.toLocaleString('fr-FR')}€ ({change.percentChange.toFixed(1)}%)
-                    </span>
-                  </div>
+                  <span className="text-muted-foreground">
+                    {new Date(change.date).toLocaleDateString('fr-FR')}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {change.previousPrice.toLocaleString('fr-FR')}€ → {change.newPrice.toLocaleString('fr-FR')}€
+                  </span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        <Separator />
-
         {/* Key info */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-              <Home className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Type</p>
-              <p className="font-medium text-foreground">{listing.propertyType}</p>
-            </div>
+        <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
+          <div>
+            <p className="text-muted-foreground">Type</p>
+            <p className="text-foreground font-medium">{listing.propertyType}</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-              <span className="text-sm font-bold text-muted-foreground">{listing.rooms || '-'}</span>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Pièces</p>
-              <p className="font-medium text-foreground">{listing.rooms || 'N/A'}</p>
-            </div>
+          <div>
+            <p className="text-muted-foreground">Pièces</p>
+            <p className="text-foreground font-medium">{listing.rooms || 'N/A'}</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">En ligne depuis</p>
-              <p className="font-medium text-foreground">{listing.daysOnline} jours</p>
-            </div>
+          <div>
+            <p className="text-muted-foreground">En ligne</p>
+            <p className="text-foreground font-medium">{listing.daysOnline} jours</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+          <div>
+            <p className="text-muted-foreground">DPE</p>
+            <p className={`font-medium ${
               listing.dpeClass === 'F' || listing.dpeClass === 'G' 
-                ? 'bg-priority-high/10' 
-                : 'bg-secondary'
-            }`}>
-              <span className={`text-sm font-bold ${
-                listing.dpeClass === 'F' || listing.dpeClass === 'G' 
-                  ? 'text-priority-high' 
-                  : 'text-muted-foreground'
-              }`}>{listing.dpeClass}</span>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">DPE</p>
-              <p className="font-medium text-foreground">Classe {listing.dpeClass}</p>
-            </div>
+                ? 'text-priority-high' 
+                : 'text-foreground'
+            }`}>Classe {listing.dpeClass}</p>
           </div>
         </div>
-
-        <Separator />
 
         {/* Score breakdown */}
         <ScoreBreakdown listing={listing} />
 
-        <Separator />
-
         {/* Description */}
-        <div>
-          <h4 className="panel-header mb-2">Description</h4>
+        <div className="space-y-3">
+          <h4 className="panel-header">Description</h4>
           <p className="text-sm text-foreground leading-relaxed">{listing.description}</p>
         </div>
 
-        <Separator />
-
         {/* Actions */}
-        <div>
-          <h4 className="panel-header mb-3">Préparer la prise de contact</h4>
-          <div className="grid grid-cols-1 gap-2">
-            <Button 
-              variant="outline" 
-              className="justify-start"
+        <div className="space-y-3">
+          <h4 className="panel-header">Prise de contact</h4>
+          <div className="space-y-2">
+            <button 
               onClick={() => setShowMessageGenerator('email')}
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-accent rounded-lg transition-colors"
             >
-              <Mail className="w-4 h-4 mr-2" />
+              <Mail className="w-4 h-4 text-muted-foreground" />
               Générer un email
-            </Button>
-            <Button 
-              variant="outline" 
-              className="justify-start"
+            </button>
+            <button 
               onClick={() => setShowMessageGenerator('sms')}
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-accent rounded-lg transition-colors"
             >
-              <MessageSquare className="w-4 h-4 mr-2" />
+              <MessageSquare className="w-4 h-4 text-muted-foreground" />
               Générer un SMS
-            </Button>
-            <Button 
-              variant="outline" 
-              className="justify-start"
+            </button>
+            <button 
               onClick={() => setShowMessageGenerator('call_script')}
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-accent rounded-lg transition-colors"
             >
-              <Phone className="w-4 h-4 mr-2" />
+              <Phone className="w-4 h-4 text-muted-foreground" />
               Script d'appel
-            </Button>
+            </button>
           </div>
         </div>
 
         {/* View original */}
         {listing.url && (
-          <Button variant="secondary" className="w-full" asChild>
-            <a href={listing.url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Voir l'annonce sur {listing.platform}
-            </a>
-          </Button>
+          <a 
+            href={listing.url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 px-4 py-3 text-sm text-muted-foreground hover:text-foreground border border-border rounded-lg transition-colors"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Voir sur {listing.platform}
+          </a>
         )}
       </div>
     </div>
