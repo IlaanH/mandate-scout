@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { ChatInterface } from '@/components/ChatInterface';
 import { ListingDetailPanel } from '@/components/ListingDetailPanel';
-import { ScoredListing } from '@/types/listing';
+import { ApiListing } from '@/types/listing';
 
 const Index = () => {
-  const [selectedListing, setSelectedListing] = useState<ScoredListing | null>(null);
+  const [selectedListing, setSelectedListing] = useState<ApiListing | null>(null);
 
-  const handleSelectListing = (listing: ScoredListing) => {
+  const handleSelectListing = (listing: ApiListing) => {
     setSelectedListing(listing);
   };
 
@@ -20,7 +20,6 @@ const Index = () => {
       <div className="flex-1 flex flex-col min-w-0 border-r border-border">
         <ChatInterface 
           onSelectListing={handleSelectListing}
-          selectedListingId={selectedListing?.id}
         />
       </div>
 

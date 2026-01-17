@@ -1,25 +1,25 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChatMessage as ChatMessageType, ScoredListing } from '@/types/listing';
-import { queryListings, parseUserQuery, generateResponseText } from '@/services/listingService';
-import { ListingCard } from './ListingCard';
-import { ArrowUp, RotateCcw } from 'lucide-react';
+import { ChatMessage as ChatMessageType, ApiListing } from '@/types/listing';
+import { sendMessage } from '@/services/chatApiService';
+import { ArrowUp, RotateCcw, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChatInterfaceProps {
-  onSelectListing: (listing: ScoredListing) => void;
+  onSelectListing?: (listing: ApiListing) => void;
   selectedListingId?: string;
 }
 
 const SUGGESTION_QUERIES = [
-  "Mandats les plus chauds",
-  "DPE F/G avec baisse de prix",
-  "Particuliers > 60 jours"
+  "Find me the 10 latest annonces for Paris",
+  "Appartements à Lyon moins de 300000€",
+  "Maisons avec jardin à Bordeaux"
 ];
 
 export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -47,22 +47,25 @@ export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterf
     setInput('');
     setIsLoading(true);
 
-    const parsed = parseUserQuery(messageText);
-    
     try {
-      const listings = await queryListings(parsed.filters);
-      const responseText = generateResponseText(parsed.intent, listings, parsed.filters);
+      const response = await sendMessage(messageText, conversationId);
+      
+      // Store conversation ID for context
+      if (response.conversation_id) {
+        setConversationId(response.conversation_id);
+      }
 
       const assistantMessage: ChatMessageType = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: responseText,
+        content: response.reply,
         timestamp: new Date(),
-        listings: listings.length > 0 ? listings : undefined
+        apiListings: response.listings
       };
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
+      console.error('API Error:', error);
       const errorMessage: ChatMessageType = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -84,7 +87,29 @@ export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterf
 
   const handleReset = () => {
     setMessages([]);
+    setConversationId(undefined);
   };
+
+  // Listing card for API listings
+  const ApiListingCard = ({ listing, index }: { listing: ApiListing; index: number }) => (
+    <div 
+      className="p-4 rounded-lg border border-border bg-card hover:border-foreground/20 transition-all cursor-pointer"
+      onClick={() => onSelectListing?.(listing)}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-foreground mb-1">{listing.price}</div>
+          <p className="text-sm text-muted-foreground line-clamp-2">{listing.details}</p>
+        </div>
+        {listing.phone && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+            <Phone className="w-3 h-3" />
+            {listing.phone}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   // Input component to reuse in both states
   const InputBar = ({ centered = false }: { centered?: boolean }) => (
@@ -196,16 +221,11 @@ export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterf
                       />
                     </div>
                     
-                    {/* Listings results */}
-                    {message.listings && message.listings.length > 0 && (
+                    {/* API Listings results */}
+                    {message.apiListings && message.apiListings.length > 0 && (
                       <div className="mt-6 space-y-3">
-                        {message.listings.map(listing => (
-                          <ListingCard
-                            key={listing.id}
-                            listing={listing}
-                            isSelected={listing.id === selectedListingId}
-                            onClick={() => onSelectListing(listing)}
-                          />
+                        {message.apiListings.map((listing, index) => (
+                          <ApiListingCard key={index} listing={listing} index={index} />
                         ))}
                       </div>
                     )}
