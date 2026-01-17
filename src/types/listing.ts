@@ -46,6 +46,13 @@ export interface ScoredListing extends Listing {
   explanation: string;
 }
 
+// API Listing type from backend
+export interface ApiListing {
+  price: string;
+  details: string;
+  phone: string;
+}
+
 // Chat types
 export type MessageRole = 'user' | 'assistant';
 
@@ -55,6 +62,7 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   listings?: ScoredListing[];
+  apiListings?: ApiListing[];
   isLoading?: boolean;
 }
 
