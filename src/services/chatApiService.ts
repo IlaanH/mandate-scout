@@ -1,6 +1,6 @@
 // API service for chat backend integration
 
-const API_BASE = "https://b6e9de9d5572.ngrok-free.app";
+const API_BASE = "https://e35b7a7d86fb.ngrok-free.app";
 
 export interface ApiListing {
   price: string;
