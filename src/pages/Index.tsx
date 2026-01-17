@@ -16,18 +16,26 @@ const Index = () => {
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
-      {/* Chat area - main interface */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${selectedListing ? 'lg:mr-[400px]' : ''}`}>
+      {/* Chat area - left side */}
+      <div className="flex-1 flex flex-col min-w-0 border-r border-border">
         <ChatInterface 
           onSelectListing={handleSelectListing}
           selectedListingId={selectedListing?.id}
         />
       </div>
 
-      {/* Context panel - listing details */}
+      {/* Workspace panel - right side (always visible on desktop) */}
+      <div className="hidden lg:flex w-[480px] flex-shrink-0">
+        <ListingDetailPanel 
+          listing={selectedListing}
+          onClose={handleClosePanel}
+        />
+      </div>
+
+      {/* Mobile panel - slides in */}
       <div 
         className={`
-          fixed right-0 top-0 h-full w-[400px] bg-card border-l border-border
+          lg:hidden fixed right-0 top-0 h-full w-full max-w-[400px] bg-workspace
           transform transition-transform duration-300 ease-out z-50
           ${selectedListing ? 'translate-x-0' : 'translate-x-full'}
         `}
@@ -41,7 +49,7 @@ const Index = () => {
       {/* Overlay for mobile */}
       {selectedListing && (
         <div 
-          className="fixed inset-0 bg-black/20 z-40 lg:hidden"
+          className="fixed inset-0 bg-foreground/10 z-40 lg:hidden"
           onClick={handleClosePanel}
         />
       )}

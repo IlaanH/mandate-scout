@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ChatMessage as ChatMessageType, ScoredListing } from '@/types/listing';
 import { queryListings, parseUserQuery, generateResponseText } from '@/services/listingService';
 import { ListingCard } from './ListingCard';
-import { Send, Sparkles, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ArrowUp, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChatInterfaceProps {
@@ -14,21 +13,18 @@ interface ChatInterfaceProps {
 const WELCOME_MESSAGE: ChatMessageType = {
   id: 'welcome',
   role: 'assistant',
-  content: `Bonjour ! Je suis votre assistant mandat.ai. Je peux vous aider à :
+  content: `Bonjour, je suis votre assistant mandat.ai.
 
-• **Trouver les mandats prioritaires** - "Montre-moi les mandats les plus chauds"
-• **Filtrer par critères** - "Annonces DPE F/G à Lyon", "Baisses de prix récentes"
-• **Analyser les signaux** - Chaque annonce est scorée automatiquement
-• **Préparer vos prises de contact** - Emails, SMS, scripts d'appel personnalisés
+Je peux vous aider à trouver les mandats prioritaires, filtrer par critères, analyser les signaux et préparer vos prises de contact.
 
 Que souhaitez-vous explorer ?`,
   timestamp: new Date()
 };
 
 const SUGGESTION_QUERIES = [
-  "Montre-moi les mandats les plus chauds",
-  "Annonces DPE F/G avec baisse de prix",
-  "Particuliers à Lyon > 60 jours"
+  "Mandats les plus chauds",
+  "DPE F/G avec baisse de prix",
+  "Particuliers > 60 jours"
 ];
 
 export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterfaceProps) {
@@ -50,7 +46,6 @@ export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterf
     const messageText = query || input.trim();
     if (!messageText || isLoading) return;
 
-    // Add user message
     const userMessage: ChatMessageType = {
       id: Date.now().toString(),
       role: 'user',
@@ -61,7 +56,6 @@ export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterf
     setInput('');
     setIsLoading(true);
 
-    // Parse query and fetch results
     const parsed = parseUserQuery(messageText);
     
     try {
@@ -81,7 +75,7 @@ export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterf
       const errorMessage: ChatMessageType = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "Désolé, une erreur s'est produite lors de la recherche. Veuillez réessayer.",
+        content: "Désolé, une erreur s'est produite. Veuillez réessayer.",
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -103,92 +97,86 @@ export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterf
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Header */}
-      <div className="flex-shrink-0 border-b border-border px-6 py-4 flex items-center justify-between bg-card">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="font-semibold text-foreground">mandat.ai</h1>
-            <p className="text-xs text-muted-foreground">Assistant de prospection immobilière</p>
-          </div>
-        </div>
-        <Button variant="ghost" size="sm" onClick={handleReset}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Nouvelle conversation
-        </Button>
+      {/* Header - minimal */}
+      <div className="flex-shrink-0 px-8 py-5 flex items-center justify-between">
+        <h1 className="font-serif text-xl text-foreground tracking-tight">mandat.ai</h1>
+        <button 
+          onClick={handleReset}
+          className="text-muted-foreground hover:text-foreground transition-colors p-2"
+        >
+          <RotateCcw className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scrollbar-thin">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={cn(
-              'flex animate-slide-up',
-              message.role === 'user' ? 'justify-end' : 'justify-start'
-            )}
-          >
-            <div className={cn(
-              'max-w-[85%]',
-              message.role === 'user' ? 'order-2' : 'order-1'
-            )}>
-              <div className={cn(
-                message.role === 'user' 
-                  ? 'chat-bubble-user' 
-                  : 'chat-bubble-assistant'
-              )}>
-                <div 
-                  className="text-sm leading-relaxed whitespace-pre-wrap"
-                  dangerouslySetInnerHTML={{ 
-                    __html: message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
-                  }}
-                />
-              </div>
-              
-              {/* Listings results */}
-              {message.listings && message.listings.length > 0 && (
-                <div className="mt-4 space-y-3">
-                  {message.listings.map(listing => (
-                    <ListingCard
-                      key={listing.id}
-                      listing={listing}
-                      isSelected={listing.id === selectedListingId}
-                      onClick={() => onSelectListing(listing)}
-                    />
-                  ))}
-                </div>
+      <div className="flex-1 overflow-y-auto px-8 py-4 scrollbar-thin">
+        <div className="max-w-2xl mx-auto space-y-8">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={cn(
+                'animate-fade-in',
+                message.role === 'user' ? 'flex justify-end' : ''
               )}
-            </div>
-          </div>
-        ))}
-
-        {/* Loading indicator */}
-        {isLoading && (
-          <div className="flex justify-start animate-fade-in">
-            <div className="chat-bubble-assistant">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                <div className="w-2 h-2 bg-primary rounded-full animate-pulse delay-100" />
-                <div className="w-2 h-2 bg-primary rounded-full animate-pulse delay-200" />
+            >
+              <div className={cn(
+                message.role === 'user' ? 'max-w-[80%]' : 'w-full'
+              )}>
+                <div className={cn(
+                  'text-sm leading-relaxed',
+                  message.role === 'user' 
+                    ? 'chat-bubble-user' 
+                    : 'chat-bubble-assistant py-0'
+                )}>
+                  <div 
+                    className="whitespace-pre-wrap"
+                    dangerouslySetInnerHTML={{ 
+                      __html: message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+                    }}
+                  />
+                </div>
+                
+                {/* Listings results */}
+                {message.listings && message.listings.length > 0 && (
+                  <div className="mt-6 space-y-3">
+                    {message.listings.map(listing => (
+                      <ListingCard
+                        key={listing.id}
+                        listing={listing}
+                        isSelected={listing.id === selectedListingId}
+                        onClick={() => onSelectListing(listing)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        )}
+          ))}
 
-        <div ref={messagesEndRef} />
+          {/* Loading indicator */}
+          {isLoading && (
+            <div className="animate-fade-in">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-pulse" />
+                <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-pulse [animation-delay:150ms]" />
+                <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-pulse [animation-delay:300ms]" />
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Suggestions - only show at start */}
       {messages.length === 1 && (
-        <div className="flex-shrink-0 px-6 pb-4">
-          <div className="flex flex-wrap gap-2 justify-center">
+        <div className="flex-shrink-0 px-8 pb-4">
+          <div className="max-w-2xl mx-auto flex flex-wrap gap-2 justify-center">
             {SUGGESTION_QUERIES.map((query, index) => (
               <button
                 key={index}
                 onClick={() => handleSubmit(query)}
-                className="px-4 py-2 rounded-full bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80 transition-colors"
+                className="px-4 py-2 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all duration-300"
               >
                 {query}
               </button>
@@ -197,31 +185,34 @@ export function ChatInterface({ onSelectListing, selectedListingId }: ChatInterf
         </div>
       )}
 
-      {/* Input area */}
-      <div className="flex-shrink-0 px-6 pb-6">
-        <div className="chat-input-container flex items-end gap-3 p-3">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Décrivez ce que vous cherchez..."
-            className="flex-1 bg-transparent resize-none text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-h-[24px] max-h-[120px]"
-            rows={1}
-            disabled={isLoading}
-          />
-          <Button 
-            size="icon" 
-            onClick={() => handleSubmit()}
-            disabled={!input.trim() || isLoading}
-            className="flex-shrink-0"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+      {/* Input area - pill style */}
+      <div className="flex-shrink-0 px-8 pb-8 pt-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="chat-input-container flex items-center gap-3 px-5 py-3">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Décrivez ce que vous cherchez..."
+              className="flex-1 bg-transparent resize-none text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-h-[24px] max-h-[100px]"
+              rows={1}
+              disabled={isLoading}
+            />
+            <button 
+              onClick={() => handleSubmit()}
+              disabled={!input.trim() || isLoading}
+              className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
+                input.trim() 
+                  ? "bg-foreground text-background" 
+                  : "bg-muted text-muted-foreground"
+              )}
+            >
+              <ArrowUp className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground text-center mt-2">
-          Appuyez sur Entrée pour envoyer • Version MVP sans IA
-        </p>
       </div>
     </div>
   );
